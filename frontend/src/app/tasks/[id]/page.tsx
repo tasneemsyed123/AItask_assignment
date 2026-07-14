@@ -66,19 +66,23 @@ export default function TaskDetailPage() {
             <TaskProgress status={task.status} />
           </div>
 
-          {(task.status === 'PENDING' || task.status === 'FAILED') && (
+          {/* PENDING always means "already auto-queued" (create() always
+              auto-runs), never "hasn't been run" - a task genuinely stuck at
+              PENDING gets converted to FAILED by the backend's stale task
+              reaper, so FAILED is the only state that needs a manual retry. */}
+          {task.status === 'FAILED' && (
             <button
               onClick={() => {
-                showToast('info', 'Queuing task…');
+                showToast('info', 'Retrying task…');
                 runTask.mutate(task._id, {
                   onSuccess: () => showToast('success', 'Task queued — watching for updates'),
-                  onError: () => showToast('error', 'Could not queue task'),
+                  onError: () => showToast('error', 'Could not retry task'),
                 });
               }}
               disabled={runTask.isPending}
               className="mb-5 px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200 disabled:opacity-50"
             >
-              {runTask.isPending ? 'Starting…' : 'Run task'}
+              {runTask.isPending ? 'Starting…' : 'Retry task'}
             </button>
           )}
 

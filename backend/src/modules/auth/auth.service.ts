@@ -14,6 +14,7 @@ import { AuthRepository } from './auth.repository';
 import { hashPassword, comparePassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
 import { sendPasswordResetEmail } from '../../utils/mailer';
+import { isAccountLocked, recordFailedLogin, clearFailedLogins } from '../../utils/accountLockout';
 import { env } from '../../config/env';
 import { ConflictError, UnauthorizedError } from '../../exceptions/AppError';
 import type { RegisterInput, LoginInput, ForgotPasswordInput, ResetPasswordInput } from './auth.schema';
@@ -53,6 +54,16 @@ export class AuthService {
   }
 
   async login(input: LoginInput): Promise<AuthResult> {
+    // Account lockout is keyed purely on email (not IP), so an attacker
+    // rotating source IPs against one fixed victim account still gets
+    // locked out - unlike the IP/IP+email rate limiters in
+    // rateLimit.middleware.ts, which rotating IPs can dodge on their own.
+    // Same generic message as any other failed login - a locked account is
+    // never distinguishable from a wrong password.
+    if (await isAccountLocked(input.email)) {
+      throw new UnauthorizedError('Invalid email or password');
+    }
+
     const user = await this.authRepository.findByEmail(input.email);
     // Deliberately identical error message for "no such user" and "wrong
     // password" - never reveal which one it was, to avoid user enumeration.
@@ -62,8 +73,11 @@ export class AuthService {
 
     const passwordMatches = await comparePassword(input.password, user.passwordHash);
     if (!passwordMatches) {
+      await recordFailedLogin(input.email);
       throw new UnauthorizedError('Invalid email or password');
     }
+
+    await clearFailedLogins(input.email);
 
     const accessToken = signAccessToken({ userId: user._id.toString(), email: user.email });
     return {

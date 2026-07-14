@@ -21,3 +21,21 @@ export function validateBody(schema: ZodSchema) {
     next();
   };
 }
+
+/**
+ * Same as validateBody but for req.query - used instead of calling
+ * schema.parse(req.query) directly in a controller, which throws a raw
+ * ZodError that isn't an AppError and so falls through to the generic 500
+ * handler on bad input instead of a 400.
+ */
+export function validateQuery(schema: ZodSchema) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      const firstIssue = result.error.issues[0];
+      throw new ValidationError(`${firstIssue.path.join('.')}: ${firstIssue.message}`);
+    }
+    (req as Request & { validatedQuery: unknown }).validatedQuery = result.data;
+    next();
+  };
+}

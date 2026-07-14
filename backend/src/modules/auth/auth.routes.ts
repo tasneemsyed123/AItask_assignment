@@ -1,43 +1,53 @@
 /**
  * modules/auth/auth.routes.ts
  * --------------------------------------------------------------------------
- * Route wiring for /api/v1/auth/*. The strict `authRateLimiter` is applied
- * here specifically (not globally) to slow down credential brute-forcing
- * without penalizing normal authenticated traffic elsewhere in the API.
+ * Route wiring for /api/v1/auth/*. Each route gets its own Redis-backed
+ * limiter (see rateLimit.middleware.ts for why they're no longer shared).
+ *
+ * /login runs a coarse per-IP limiter BEFORE validation (cheap first line of
+ * defense against raw flooding), then the strict per-IP+email limiter AFTER
+ * validation, since it needs the parsed/normalized email from the body.
  */
 import { Router } from 'express';
 import { authController } from './auth.controller';
 import { validateBody } from '../../middlewares/validate.middleware';
 import { asyncHandler } from '../../middlewares/error.middleware';
-import { authRateLimiter } from '../../middlewares/rateLimit.middleware';
+import {
+  registerRateLimiter,
+  loginIpRateLimiter,
+  loginAccountRateLimiter,
+  forgotPasswordRateLimiter,
+  resetPasswordRateLimiter,
+} from '../../middlewares/rateLimit.middleware';
 import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema';
 
 export const authRouter = Router();
 
 authRouter.post(
   '/register',
-  authRateLimiter,
+  registerRateLimiter,
   validateBody(registerSchema),
   asyncHandler(authController.register),
 );
 
 authRouter.post(
   '/login',
-  authRateLimiter,
+  loginIpRateLimiter,
   validateBody(loginSchema),
+  loginAccountRateLimiter,
   asyncHandler(authController.login),
 );
 
 authRouter.post(
   '/forgot-password',
-  authRateLimiter,
+  forgotPasswordRateLimiter,
   validateBody(forgotPasswordSchema),
   asyncHandler(authController.forgotPassword),
 );
 
 authRouter.post(
   '/reset-password',
-  authRateLimiter,
+  resetPasswordRateLimiter,
   validateBody(resetPasswordSchema),
   asyncHandler(authController.resetPassword),
 );

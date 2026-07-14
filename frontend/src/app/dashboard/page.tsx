@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useTaskList, useRunTask, useDeleteTask, useBulkDeleteTasks } from '@/hooks/useTasks';
 import { useTaskPolling } from '@/hooks/useTaskPolling';
@@ -325,10 +326,10 @@ export default function DashboardPage() {
               selected={selectedIds.has(task._id)}
               onToggleSelect={() => toggleSelectId(task._id)}
               onRun={() => {
-                showToast('info', `Queuing "${task.title}"…`);
+                showToast('info', `Retrying "${task.title}"…`);
                 runTask.mutate(task._id, {
                   onSuccess: () => showToast('success', `"${task.title}" queued — open it to watch progress`),
-                  onError: () => showToast('error', `Could not queue "${task.title}"`),
+                  onError: () => showToast('error', `Could not retry "${task.title}"`),
                 });
               }}
               onDelete={() => {
@@ -372,6 +373,17 @@ function TaskRow({
   const [pollingEnabled, setPollingEnabled] = useState(!isTerminalStatus(task.status));
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  // `useState(justCreated)` only reads justCreated once, at mount - it
+  // doesn't react to it changing later. Without this, creating task B while
+  // task A's row (auto-expanded when IT was the new one) is still mounted
+  // leaves task A's drawer open too, since nothing ever tells it to close.
+  // Collapse this row when it stops being "the just-created one" (a newer
+  // task took over) - manual expand/collapse by the user elsewhere is
+  // unaffected since this only fires on the justCreated transition.
+  useEffect(() => {
+    if (!justCreated) setIsExpanded((cur) => (cur ? false : cur));
+  }, [justCreated]);
+
   const toggleExpanded = () => {
     if (selectMode) {
       onToggleSelect?.();
@@ -396,7 +408,12 @@ function TaskRow({
     enabled: pollingEnabled,
   });
   const current = liveTask ?? task;
-  const canRun = current.status === 'PENDING' || current.status === 'FAILED';
+  // PENDING always means "already auto-queued, worker hasn't picked it up
+  // yet" (create() always auto-runs - see tasks.controller.ts), never
+  // "hasn't been run." A PENDING task that's genuinely stuck (never reached
+  // the queue) gets converted to FAILED by the backend's stale task reaper,
+  // so FAILED is the only state that actually needs a manual retry.
+  const canRun = current.status === 'FAILED';
   const isTerminal = isTerminalStatus(current.status);
 
   return (
@@ -461,7 +478,7 @@ function TaskRow({
                     }}
                     className="text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2.5 py-1 rounded-md hover:bg-blue-100 dark:hover:bg-blue-950 transition-colors"
                   >
-                    Run →
+                    Retry →
                   </button>
                 )}
                 <button
@@ -518,12 +535,21 @@ function TaskRow({
       >
         <div className="overflow-hidden">
           <div className="px-5 pb-5 pt-1 bg-gray-100/60 dark:bg-gray-800/60 border-t border-gray-200 dark:border-gray-700 space-y-4">
-            <div className="pt-3 px-1">
-              {justCreated ? (
-                <TaskPipelineAnimation status={current.status} progress={current.progress} />
-              ) : (
-                <TaskProgress status={current.status} progress={current.progress} />
-              )}
+            <div className="pt-3 px-1 flex items-start justify-between gap-3">
+              <div className="flex-1">
+                {justCreated ? (
+                  <TaskPipelineAnimation status={current.status} progress={current.progress} />
+                ) : (
+                  <TaskProgress status={current.status} progress={current.progress} />
+                )}
+              </div>
+              <Link
+                href={`/tasks/${task._id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
+              >
+                View full page →
+              </Link>
             </div>
 
             {/* Input + Result side by side */}

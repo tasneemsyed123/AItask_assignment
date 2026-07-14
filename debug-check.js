@@ -15,7 +15,7 @@
 
 const API = 'http://localhost:4000/api/v1';
 const TEST_EMAIL = `debug-${Date.now()}@test.com`;
-const TEST_PASSWORD = 'debugpass123';
+const TEST_PASSWORD = 'DebugPass123';
 
 function log(step, ok, detail) {
   const tag = ok ? '✅ PASS' : '❌ FAIL';

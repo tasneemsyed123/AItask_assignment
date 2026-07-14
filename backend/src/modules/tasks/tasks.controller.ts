@@ -7,8 +7,18 @@
 import { Response } from 'express';
 import { TasksService } from './tasks.service';
 import { TasksRepository } from './tasks.repository';
-import { listTasksQuerySchema, bulkDeleteTasksSchema, deleteTasksQuerySchema } from './tasks.schema';
+import type { ListTasksQuery, BulkDeleteTasksInput, DeleteTasksQuery } from './tasks.schema';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware';
+
+// validatedQuery/body are optional here (rather than required) so these
+// request types stay structurally assignable from a plain Express Request -
+// matching how AuthenticatedRequest's own `user?` field works. They're
+// always actually present by the time a controller runs because
+// validateQuery/validateBody ran first in tasks.routes.ts.
+type ValidatedRequest<Q = unknown, B = unknown> = AuthenticatedRequest & {
+  validatedQuery?: Q;
+  body?: B;
+};
 
 const tasksService = new TasksService(new TasksRepository());
 
@@ -32,8 +42,8 @@ export const tasksController = {
     res.status(200).json({ success: true, data: { task } });
   },
 
-  async list(req: AuthenticatedRequest, res: Response) {
-    const query = listTasksQuerySchema.parse(req.query);
+  async list(req: ValidatedRequest<ListTasksQuery>, res: Response) {
+    const query = req.validatedQuery!;
     const { tasks, total } = await tasksService.listTasks(req.user!.userId, query);
     res.status(200).json({ success: true, data: { tasks, total, page: query.page, limit: query.limit } });
   },
@@ -43,9 +53,9 @@ export const tasksController = {
     res.status(204).send();
   },
 
-  async removeMany(req: AuthenticatedRequest, res: Response) {
-    const { ids } = bulkDeleteTasksSchema.parse(req.body ?? {});
-    const { status } = deleteTasksQuerySchema.parse(req.query);
+  async removeMany(req: ValidatedRequest<DeleteTasksQuery, BulkDeleteTasksInput>, res: Response) {
+    const { ids } = req.body!;
+    const { status } = req.validatedQuery!;
     const deletedCount = await tasksService.deleteTasks(req.user!.userId, { ids, status });
     res.status(200).json({ success: true, data: { deletedCount } });
   },

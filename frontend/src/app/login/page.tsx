@@ -26,7 +26,15 @@ export default function LoginPage() {
       showToast('success', `Welcome back, ${data.data.user.name}`);
       router.push('/dashboard');
     } catch (err) {
-      showToast('error', getApiErrorMessage(err));
+      // Message stays generic ("Invalid email or password") rather than
+      // distinguishing "no such account" - revealing that would let an
+      // attacker enumerate which emails are registered. The sign-up nudge
+      // gets the same UX win without that risk: if it really is a new
+      // user, the link is right there either way.
+      showToast('error', getApiErrorMessage(err), {
+        label: 'Create account',
+        onClick: () => router.push('/register'),
+      });
     } finally {
       setIsSubmitting(false);
     }

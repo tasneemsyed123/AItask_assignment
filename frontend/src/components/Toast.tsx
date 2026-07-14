@@ -8,9 +8,10 @@
 import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
 
 type ToastType = 'success' | 'error' | 'info';
-interface ToastItem { id: number; type: ToastType; message: string; }
+interface ToastAction { label: string; onClick: () => void; }
+interface ToastItem { id: number; type: ToastType; message: string; action?: ToastAction; }
 
-const ToastContext = createContext<{ show: (type: ToastType, message: string) => void } | null>(null);
+const ToastContext = createContext<{ show: (type: ToastType, message: string, action?: ToastAction) => void } | null>(null);
 
 const DOT: Record<ToastType, string> = {
   success: 'bg-emerald-500',
@@ -21,9 +22,9 @@ const DOT: Record<ToastType, string> = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const show = useCallback((type: ToastType, message: string) => {
+  const show = useCallback((type: ToastType, message: string, action?: ToastAction) => {
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, type, message }]);
+    setToasts((prev) => [...prev, { id, type, message, action }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   }, []);
 
@@ -37,7 +38,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className="animate-slideIn flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-800 dark:text-gray-100"
           >
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT[t.type]}`} />
-            {t.message}
+            <span>{t.message}</span>
+            {t.action && (
+              <button
+                type="button"
+                onClick={() => {
+                  t.action!.onClick();
+                  setToasts((prev) => prev.filter((toast) => toast.id !== t.id));
+                }}
+                className="ml-1 shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold underline underline-offset-2"
+              >
+                {t.action.label}
+              </button>
+            )}
           </div>
         ))}
       </div>

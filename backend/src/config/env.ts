@@ -19,16 +19,45 @@ function required(name: string): string {
   return value;
 }
 
+// A short/weak JWT_SECRET is crackable by brute force and would let an
+// attacker forge access tokens for any user - fail fast at boot rather than
+// let the server run with one. 32 chars is a floor, not a target; the
+// README's generation command produces a much longer random value.
+const MIN_JWT_SECRET_LENGTH = 32;
+
+function requiredJwtSecret(): string {
+  const value = required('JWT_SECRET');
+  if (value.length < MIN_JWT_SECRET_LENGTH) {
+    throw new Error(
+      `JWT_SECRET is too short (${value.length} chars, minimum ${MIN_JWT_SECRET_LENGTH}). ` +
+        'Generate a strong one: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"',
+    );
+  }
+  return value;
+}
+
+const nodeEnv = process.env.NODE_ENV ?? 'development';
+const isProduction = nodeEnv === 'production';
+const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
+
+// A wildcard origin with credentials:true (see app.ts) is a browser-enforced
+// no-op at best and a misconfiguration risk at worst - refuse to boot in
+// production with one rather than silently allow any site to call the API
+// with cookies/auth headers.
+if (isProduction && corsOrigin === '*') {
+  throw new Error('CORS_ORIGIN must not be "*" in production - set it to the exact frontend origin.');
+}
+
 export const env = {
   port: Number(process.env.PORT ?? 4000),
-  nodeEnv: process.env.NODE_ENV ?? 'development',
+  nodeEnv,
   mongoUri: required('MONGO_URI'),
   redisUrl: required('REDIS_URL'),
-  jwtSecret: required('JWT_SECRET'),
+  jwtSecret: requiredJwtSecret(),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
-  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
+  corsOrigin,
   staleTaskTimeoutMinutes: Number(process.env.STALE_TASK_TIMEOUT_MINUTES ?? 5),
-  isProduction: process.env.NODE_ENV === 'production',
+  isProduction,
   frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3000',
   gmailUser: process.env.GMAIL_USER ?? '',
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD ?? '',

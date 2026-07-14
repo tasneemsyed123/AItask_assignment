@@ -28,7 +28,15 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    // A 401 from /auth/* itself (wrong login password, expired reset token,
+    // ...) is an expected response the calling page already handles with
+    // its own error toast - redirecting here would force a full page
+    // reload via window.location.href (even while already on /login),
+    // tearing down the React app before that toast ever gets to render.
+    // This redirect is only for a previously-valid token going stale on a
+    // PROTECTED route (e.g. /tasks/*) mid-session.
+    const isAuthEndpoint = error.config?.url?.includes('/auth/');
+    if (error.response?.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       window.location.href = '/login';

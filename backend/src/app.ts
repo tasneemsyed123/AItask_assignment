@@ -9,7 +9,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env';
-import { globalRateLimiter } from './middlewares/rateLimit.middleware';
+import { apiRateLimiter } from './middlewares/rateLimit.middleware';
 import { errorMiddleware } from './middlewares/error.middleware';
 import { authRouter } from './modules/auth/auth.routes';
 import { tasksRouter } from './modules/tasks/tasks.routes';
@@ -18,15 +18,42 @@ export function createApp(): Application {
   const app = express();
 
   // Security middleware - applied first, before any route logic runs.
-  app.use(helmet());
+  //
+  // This API only ever serves JSON (no HTML/scripts/styles), so CSP is
+  // locked down to default-src 'none' rather than helmet's browser-app
+  // defaults - there is nothing on this origin that should ever load a
+  // script, stylesheet, or frame. HSTS is set explicitly (1 year +
+  // includeSubDomains) rather than relying on helmet's default, since that's
+  // the value we actually want enforced in production. crossOriginResourcePolicy
+  // is set to 'cross-origin' - the frontend runs on a different origin
+  // (env.corsOrigin) and needs to read these JSON responses; CORS above is
+  // what actually restricts who that is, so CORP here doesn't need to be
+  // 'same-origin' as well.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+      },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(cors({ origin: env.corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
-  app.use(globalRateLimiter);
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ success: true, data: { status: 'ok' } });
   });
 
+  // Baseline abuse guard for the whole API surface; individual auth routes
+  // layer stricter, Redis-backed limits on top of this (see auth.routes.ts).
+  app.use('/api/v1', apiRateLimiter);
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/tasks', tasksRouter);
 
