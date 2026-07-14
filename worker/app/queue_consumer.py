@@ -45,14 +45,14 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 # visibly and several tasks can be watched running at once, since the real
 # string operations below are computed instantly. This paces the progress
 # *updates*, not the actual work.
-TASK_DURATION_SECONDS = 15
+TASK_DURATION_SECONDS = 8
 PROGRESS_TICKS = 20
 
 # A dequeued task visibly sits at "Queued" (PENDING) for this long before a
 # worker starts it - purely so the Queued -> Processing transition is
 # observable in the UI instead of flipping instantly. Randomized per-task so
 # several tasks queued together don't all flip to Processing in lockstep.
-QUEUE_DELAY_RANGE_SECONDS = (5, 10)
+QUEUE_DELAY_RANGE_SECONDS = (2.5, 3.5)
 
 
 def process_task(task_id: str) -> None:

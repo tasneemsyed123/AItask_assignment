@@ -20,6 +20,14 @@ export class TasksRepository {
     return TaskModel.findById(id);
   }
 
+  /** Titles equal to `baseTitle` or matching its "`baseTitle` (n)" duplicate-suffix form, for this user. */
+  async findTitlesLike(userId: string, baseTitle: string): Promise<string[]> {
+    const escaped = baseTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`^${escaped}(?: \\(\\d+\\))?$`);
+    const tasks = await TaskModel.find({ userId, title: pattern }, { title: 1 });
+    return tasks.map((t) => t.title);
+  }
+
   async findByIdAndUser(id: string, userId: string): Promise<TaskDocument | null> {
     return TaskModel.findOne({ _id: id, userId });
   }
@@ -44,6 +52,18 @@ export class TasksRepository {
 
   async deleteByIdAndUser(id: string, userId: string): Promise<TaskDocument | null> {
     return TaskModel.findOneAndDelete({ _id: id, userId });
+  }
+
+  async deleteManyByIdsAndUser(ids: string[], userId: string): Promise<number> {
+    const result = await TaskModel.deleteMany({ _id: { $in: ids }, userId });
+    return result.deletedCount ?? 0;
+  }
+
+  async deleteAllByUser(userId: string, status?: TaskStatus): Promise<number> {
+    const query: Record<string, unknown> = { userId };
+    if (status) query.status = status;
+    const result = await TaskModel.deleteMany(query);
+    return result.deletedCount ?? 0;
   }
 
   async markQueued(task: TaskDocument): Promise<TaskDocument> {

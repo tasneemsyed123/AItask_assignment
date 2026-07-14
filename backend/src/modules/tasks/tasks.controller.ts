@@ -7,7 +7,7 @@
 import { Response } from 'express';
 import { TasksService } from './tasks.service';
 import { TasksRepository } from './tasks.repository';
-import { listTasksQuerySchema } from './tasks.schema';
+import { listTasksQuerySchema, bulkDeleteTasksSchema, deleteTasksQuerySchema } from './tasks.schema';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware';
 
 const tasksService = new TasksService(new TasksRepository());
@@ -41,5 +41,12 @@ export const tasksController = {
   async remove(req: AuthenticatedRequest, res: Response) {
     await tasksService.deleteTask(req.user!.userId, req.params.id);
     res.status(204).send();
+  },
+
+  async removeMany(req: AuthenticatedRequest, res: Response) {
+    const { ids } = bulkDeleteTasksSchema.parse(req.body ?? {});
+    const { status } = deleteTasksQuerySchema.parse(req.query);
+    const deletedCount = await tasksService.deleteTasks(req.user!.userId, { ids, status });
+    res.status(200).json({ success: true, data: { deletedCount } });
   },
 };

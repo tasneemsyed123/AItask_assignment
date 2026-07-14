@@ -19,3 +19,16 @@ export const listTasksQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
+
+// DELETE /tasks body: explicit `ids` deletes exactly those tasks ("delete
+// selected"); omitting it deletes every task the caller owns, optionally
+// narrowed by the `status` query param ("delete all" / "delete all queued").
+export const bulkDeleteTasksSchema = z.object({
+  ids: z.array(z.string()).min(1).optional(),
+});
+export type BulkDeleteTasksInput = z.infer<typeof bulkDeleteTasksSchema>;
+
+export const deleteTasksQuerySchema = z.object({
+  status: z.enum(['PENDING', 'RUNNING', 'SUCCESS', 'FAILED']).optional(),
+});
+export type DeleteTasksQuery = z.infer<typeof deleteTasksQuerySchema>;

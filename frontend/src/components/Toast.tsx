@@ -34,7 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="animate-slideIn flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg border border-gray-200 bg-white text-sm font-medium text-gray-800"
+            className="animate-slideIn flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-800 dark:text-gray-100"
           >
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT[t.type]}`} />
             {t.message}

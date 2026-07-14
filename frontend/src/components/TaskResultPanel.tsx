@@ -32,17 +32,17 @@ export function TaskResultPanel({
 
   if (status === 'FAILED') {
     return (
-      <div className="rounded-lg bg-red-50 ring-1 ring-red-100 px-4 py-3 h-full">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-red-500 mb-1">Error</p>
-        <p className="text-sm text-red-700">{errorMessage ?? 'The task failed and did not return a reason.'}</p>
+      <div className="rounded-lg bg-red-50 dark:bg-red-950/40 ring-1 ring-red-100 dark:ring-red-900 px-4 py-3 h-full">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-red-500 dark:text-red-400 mb-1">Error</p>
+        <p className="text-sm text-red-700 dark:text-red-300">{errorMessage ?? 'The task failed and did not return a reason.'}</p>
       </div>
     );
   }
 
   if (status !== 'SUCCESS' || !result) {
     return (
-      <div className="rounded-lg bg-gray-50 ring-1 ring-gray-200 h-full flex items-center justify-center px-4 py-3">
-        <p className="text-sm text-gray-400">Result will appear here once the task completes</p>
+      <div className="rounded-lg bg-gray-50 dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700 h-full flex items-center justify-center px-4 py-3">
+        <p className="text-sm text-gray-400 dark:text-gray-500">Result will appear here once the task completes</p>
       </div>
     );
   }
@@ -58,19 +58,19 @@ export function TaskResultPanel({
   };
 
   return (
-    <div className="rounded-lg bg-emerald-50/60 ring-1 ring-emerald-100 overflow-hidden h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-emerald-100">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">
+    <div className="rounded-lg bg-emerald-50/60 dark:bg-emerald-950/30 ring-1 ring-emerald-100 dark:ring-emerald-900 overflow-hidden h-full flex flex-col">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-emerald-100 dark:border-emerald-900">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
           Result{pretty ? ' · json' : ''}
         </span>
         <button
           onClick={handleCopy}
-          className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 transition-colors"
+          className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors"
         >
           {copied ? 'Copied ✓' : 'Copy'}
         </button>
       </div>
-      <pre className="px-4 py-3 text-[12.5px] leading-relaxed text-gray-900 whitespace-pre-wrap break-words flex-1 overflow-y-auto font-mono">
+      <pre className="px-4 py-3 text-[12.5px] leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words flex-1 overflow-y-auto font-mono">
         {display}
       </pre>
     </div>

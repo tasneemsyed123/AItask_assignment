@@ -33,29 +33,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#EEF3FC] via-[#F5F8FE] to-[#FAFBFF] px-4 py-8 sm:px-6 sm:py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#EEF3FC] via-[#F5F8FE] to-[#FAFBFF] dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 px-4 py-8 sm:px-6 sm:py-12">
       <div className="w-full max-w-[420px] md:max-w-[460px]">
         <div className="text-center mb-6 md:mb-8">
           <h1 className="text-3xl sm:text-4xl md:text-[42px] font-extrabold text-blue-600 tracking-tight leading-none">
             AI TASK MANAGER
           </h1>
-          <p className="text-sm md:text-base text-[#6B7280] mt-2.5">
+          <p className="text-sm md:text-base text-[#6B7280] dark:text-gray-400 mt-2.5">
             Task Management  | by Tasneem Syed
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgba(30,64,175,0.08)] border border-[#E7ECF6] overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-[0_8px_30px_rgba(30,64,175,0.08)] border border-[#E7ECF6] dark:border-gray-800 overflow-hidden">
           <div className="h-1.5 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700" />
 
           <div className="px-6 pt-7 pb-7 sm:px-8 sm:pt-8 sm:pb-8 md:px-10 md:pt-10 md:pb-10">
-            <h2 className="text-lg md:text-xl font-semibold text-[#111827] tracking-tight leading-tight mb-1">Welcome back</h2>
-            <p className="text-xs md:text-sm text-[#6B7280] mb-6 md:mb-7">Sign in to your dashboard</p>
+            <h2 className="text-lg md:text-xl font-semibold text-[#111827] dark:text-gray-100 tracking-tight leading-tight mb-1">Welcome back</h2>
+            <p className="text-xs md:text-sm text-[#6B7280] dark:text-gray-400 mb-6 md:mb-7">Sign in to your dashboard</p>
 
             <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
               <div>
-                <label className="block text-xs md:text-sm font-medium text-[#374151] mb-1.5">Email address</label>
+                <label className="block text-xs md:text-sm font-medium text-[#374151] dark:text-gray-300 mb-1.5">Email address</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] dark:text-gray-500">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/>
                       <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" strokeLinecap="round"/>
@@ -66,7 +66,7 @@ export default function LoginPage() {
                     required
                     autoComplete="email"
                     placeholder="name@company.com"
-                    className="w-full pl-10 pr-3.5 py-2.5 md:py-3 rounded-lg border border-[#E5E9F2] bg-[#FAFBFF] text-sm md:text-[15px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-blue-500/12 focus:border-blue-500 focus:bg-white transition-all duration-200"
+                    className="w-full pl-10 pr-3.5 py-2.5 md:py-3 rounded-lg border border-[#E5E9F2] dark:border-gray-700 bg-[#FAFBFF] dark:bg-gray-800 text-sm md:text-[15px] text-[#111827] dark:text-gray-100 placeholder:text-[#9CA3AF] dark:placeholder:text-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-500/12 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-all duration-200"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -75,13 +75,13 @@ export default function LoginPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs md:text-sm font-medium text-[#374151]">Password</label>
+                  <label className="block text-xs md:text-sm font-medium text-[#374151] dark:text-gray-300">Password</label>
                   <Link href="/forgot-password" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
                     Forgot password?
                   </Link>
                 </div>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] dark:text-gray-500">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <rect x="4" y="10" width="16" height="10" rx="2"/>
                       <path d="M8 10V7a4 4 0 1 1 8 0v3" strokeLinecap="round"/>
@@ -92,14 +92,14 @@ export default function LoginPage() {
                     required
                     autoComplete="current-password"
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 md:py-3 rounded-lg border border-[#E5E9F2] bg-[#FAFBFF] text-sm md:text-[15px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-blue-500/12 focus:border-blue-500 focus:bg-white transition-all duration-200"
+                    className="w-full pl-10 pr-10 py-2.5 md:py-3 rounded-lg border border-[#E5E9F2] dark:border-gray-700 bg-[#FAFBFF] dark:bg-gray-800 text-sm md:text-[15px] text-[#111827] dark:text-gray-100 placeholder:text-[#9CA3AF] dark:placeholder:text-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-500/12 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-all duration-200"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] dark:text-gray-500 hover:text-[#6B7280] dark:text-gray-400 transition-colors"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     tabIndex={-1}
                   >
@@ -117,12 +117,12 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <label className="flex items-center gap-2 text-xs md:text-sm text-[#6B7280] cursor-pointer select-none pt-1">
+              <label className="flex items-center gap-2 text-xs md:text-sm text-[#6B7280] dark:text-gray-400 cursor-pointer select-none pt-1">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#D1D5DB] text-blue-600 focus:ring-blue-500/20 cursor-pointer"
+                  className="w-4 h-4 rounded border-[#D1D5DB] dark:border-gray-600 dark:bg-gray-800 text-blue-600 focus:ring-blue-500/20 cursor-pointer"
                 />
                 Remember me on this device
               </label>
@@ -151,7 +151,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="text-xs md:text-sm text-[#6B7280] text-center mt-6">
+            <p className="text-xs md:text-sm text-[#6B7280] dark:text-gray-400 text-center mt-6">
               Don't have an account?{' '}
               <Link href="/register" className="text-blue-600 font-medium hover:text-blue-700 transition-colors">
                 Create one

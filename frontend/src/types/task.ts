@@ -9,6 +9,12 @@
  * worker/app/operations) — it's 'REVERSE', not 'REVERSE_STRING'.
  */
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
 
 export type OperationType = 'UPPERCASE' | 'LOWERCASE' | 'REVERSE' | 'WORD_COUNT';
@@ -24,7 +30,7 @@ export const OPERATION_DESCRIPTIONS: Record<OperationType, string> = {
   UPPERCASE: 'Convert all characters to uppercase',
   LOWERCASE: 'Convert all characters to lowercase',
   REVERSE: 'Reverse the input string',
-  WORD_COUNT: 'Return the total number of words',
+  WORD_COUNT: 'Return the total number of words and letters',
 };
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'success';

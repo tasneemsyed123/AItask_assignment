@@ -9,10 +9,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { TaskLogEntry, TaskStatus } from '@/types/task';
 
 const LEVEL_COLOR: Record<TaskLogEntry['level'], string> = {
-  info: 'text-gray-600',
-  warn: 'text-amber-600',
-  error: 'text-red-600',
-  success: 'text-emerald-600',
+  info: 'text-gray-600 dark:text-gray-400',
+  warn: 'text-amber-600 dark:text-amber-400',
+  error: 'text-red-600 dark:text-red-400',
+  success: 'text-emerald-600 dark:text-emerald-400',
 };
 
 const FALLBACK_LINES = [
@@ -58,17 +58,17 @@ export function TaskLogPanel({ status, logs }: { status: TaskStatus; logs?: Task
   const isEmpty = !hasRealLogs && simulated.length === 0 && status === 'PENDING';
 
   return (
-    <div className="rounded-lg bg-gray-50 ring-1 ring-gray-200 overflow-hidden h-full flex flex-col">
-      <div className="px-3.5 py-2 border-b border-gray-200">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Execution log</span>
+    <div className="rounded-lg bg-gray-50 dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden h-full flex flex-col">
+      <div className="px-3.5 py-2 border-b border-gray-200 dark:border-gray-700">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Execution log</span>
       </div>
       <div ref={scrollRef} className="px-3.5 py-3 flex-1 overflow-y-auto font-mono text-[12px] leading-relaxed space-y-1">
-        {isEmpty && <p className="text-gray-400">Waiting in queue — logs appear once a worker picks this up.</p>}
+        {isEmpty && <p className="text-gray-400 dark:text-gray-500">Waiting in queue — logs appear once a worker picks this up.</p>}
 
         {hasRealLogs &&
           logs!.map((log, i) => (
             <div key={log.id ?? i} className="flex gap-2">
-              <span className="text-gray-400 shrink-0">{formatTime(log.timestamp)}</span>
+              <span className="text-gray-400 dark:text-gray-500 shrink-0">{formatTime(log.timestamp)}</span>
               <span className={LEVEL_COLOR[log.level]}>{log.message}</span>
             </div>
           ))}
@@ -76,8 +76,8 @@ export function TaskLogPanel({ status, logs }: { status: TaskStatus; logs?: Task
         {!hasRealLogs &&
           simulated.map((line, i) => (
             <div key={i} className="flex gap-2">
-              <span className="text-gray-400 shrink-0">--:--:--</span>
-              <span className="text-gray-600">{line}</span>
+              <span className="text-gray-400 dark:text-gray-500 shrink-0">--:--:--</span>
+              <span className="text-gray-600 dark:text-gray-400">{line}</span>
             </div>
           ))}
       </div>
