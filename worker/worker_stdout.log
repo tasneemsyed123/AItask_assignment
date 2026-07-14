@@ -1,0 +1,7 @@
+{"level": "INFO", "message": "Worker started, listening on queue 'task_queue'", "service": "ai-task-platform-worker", "time": "2026-07-14 14:30:02,133"}
+{"level": "INFO", "message": "Processing task 6a55faba06690bfb789b44b0 (UPPERCASE)", "service": "ai-task-platform-worker", "time": "2026-07-14 14:30:42,178"}
+{"level": "INFO", "message": "Processing task 6a55faba06690bfb789b44b8 (UPPERCASE)", "service": "ai-task-platform-worker", "time": "2026-07-14 14:30:42,564"}
+{"level": "INFO", "message": "Task 6a55faba06690bfb789b44b0 completed successfully", "service": "ai-task-platform-worker", "time": "2026-07-14 14:31:12,274"}
+{"level": "INFO", "message": "Task 6a55faba06690bfb789b44b8 completed successfully", "service": "ai-task-platform-worker", "time": "2026-07-14 14:31:12,662"}
+{"level": "INFO", "message": "Processing task 6a55fb1906690bfb789b44c9 (REVERSE)", "service": "ai-task-platform-worker", "time": "2026-07-14 14:32:17,713"}
+{"level": "INFO", "message": "Task 6a55fb1906690bfb789b44c9 completed successfully", "service": "ai-task-platform-worker", "time": "2026-07-14 14:32:47,818"}

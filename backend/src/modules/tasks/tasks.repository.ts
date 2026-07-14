@@ -42,8 +42,13 @@ export class TasksRepository {
     return { tasks, total };
   }
 
+  async deleteByIdAndUser(id: string, userId: string): Promise<TaskDocument | null> {
+    return TaskModel.findOneAndDelete({ _id: id, userId });
+  }
+
   async markQueued(task: TaskDocument): Promise<TaskDocument> {
     task.status = 'PENDING';
+    task.progress = 0;
     task.queuedAt = new Date();
     task.logs.push({ level: 'info', message: 'Task queued for execution', timestamp: new Date() });
     return task.save();

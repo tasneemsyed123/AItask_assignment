@@ -1,30 +1,36 @@
 /**
  * components/TaskProgress.tsx
  * --------------------------------------------------------------------------
- * Step pipeline: Queued -> Processing -> Done (or Failed).
- * `compact` renders a thin inline strip for the collapsed row.
- * Full mode renders labeled steps for the expanded detail panel.
+ * Simple horizontal progress bar (compact) or a clean 3-step tracker (full).
  */
 import type { TaskStatus } from '@/types/task';
 
 const STEP_ORDER: TaskStatus[] = ['PENDING', 'RUNNING', 'SUCCESS'];
 
 function stepIndex(status: TaskStatus) {
-  if (status === 'FAILED') return STEP_ORDER.indexOf('RUNNING'); // failed while processing
+  if (status === 'FAILED') return STEP_ORDER.indexOf('RUNNING');
   return STEP_ORDER.indexOf(status);
 }
 
-export function TaskProgress({ status, compact = false }: { status: TaskStatus; compact?: boolean }) {
+export function TaskProgress({
+  status,
+  progress = 0,
+  compact = false,
+}: {
+  status: TaskStatus;
+  progress?: number;
+  compact?: boolean;
+}) {
   const current = stepIndex(status);
   const failed = status === 'FAILED';
 
   if (compact) {
-    const pct = status === 'PENDING' ? 8 : status === 'RUNNING' ? 55 : 100;
+    const pct = status === 'SUCCESS' ? 100 : Math.min(100, Math.max(0, progress));
     return (
-      <div className="h-1 w-full rounded-full bg-[#F1EFFA] overflow-hidden">
+      <div className="h-1 w-full rounded-full bg-gray-100 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ease-out ${
-            failed ? 'bg-red-400' : status === 'SUCCESS' ? 'bg-emerald-400' : 'bg-brand-500'
+            failed ? 'bg-red-400' : status === 'SUCCESS' ? 'bg-emerald-400' : 'bg-blue-500'
           }`}
           style={{ width: `${pct}%` }}
         />
@@ -54,25 +60,25 @@ export function TaskProgress({ status, compact = false }: { status: TaskStatus; 
                     : isDone
                     ? 'bg-emerald-500 ring-emerald-100 text-white'
                     : isActive
-                    ? 'bg-brand-600 ring-brand-100 text-white animate-pulse'
-                    : 'bg-white ring-[#E6E1F5] text-[#B3ADC9]'
+                    ? 'bg-blue-600 ring-blue-100 text-white'
+                    : 'bg-white ring-gray-200 text-gray-400'
                 }`}
               >
                 {isFailedStep ? '!' : isDone ? '✓' : i + 1}
               </div>
               <span
                 className={`text-[10px] font-medium whitespace-nowrap ${
-                  isFailedStep ? 'text-red-600' : isDone || isActive ? 'text-[#1A1325]' : 'text-[#B3ADC9]'
+                  isFailedStep ? 'text-red-600' : isDone || isActive ? 'text-gray-900' : 'text-gray-400'
                 }`}
               >
                 {step.label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div className="flex-1 h-[2px] mx-2 mb-4 rounded-full overflow-hidden bg-[#EDE9F7]">
+              <div className="flex-1 h-[2px] mx-2 mb-4 rounded-full overflow-hidden bg-gray-100">
                 <div
                   className={`h-full transition-all duration-700 ease-out ${
-                    isFailedStep ? 'bg-red-400 w-full' : i < current ? 'bg-emerald-400 w-full' : 'w-0 bg-brand-400'
+                    isFailedStep ? 'bg-red-400 w-full' : i < current ? 'bg-emerald-400 w-full' : 'w-0 bg-blue-400'
                   }`}
                 />
               </div>

@@ -45,4 +45,11 @@ export class TasksService {
   async listTasks(userId: string, query: ListTasksQuery) {
     return this.tasksRepository.listByUser(userId, query);
   }
+
+  async deleteTask(userId: string, taskId: string): Promise<void> {
+    const deleted = await this.tasksRepository.deleteByIdAndUser(taskId, userId);
+    if (!deleted) {
+      throw new NotFoundError('Task not found');
+    }
+  }
 }

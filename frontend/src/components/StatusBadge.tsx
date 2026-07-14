@@ -5,23 +5,22 @@
  */
 import type { TaskStatus } from '@/types/task';
 
-const CONFIG: Record<
-  TaskStatus,
-  { label: string; text: string; bg: string; ring: string; dot: string; pulse?: boolean }
-> = {
+type StatusConfig = { label: string; text: string; bg: string; ring: string; dot: string; pulse?: boolean };
+
+const CONFIG: Record<TaskStatus, StatusConfig> = {
   PENDING: {
     label: 'Queued',
-    text: 'text-[#6B5FA8]',
-    bg: 'bg-[#EFEAFB]',
-    ring: 'ring-[#DCD3F5]',
-    dot: 'bg-[#8B7FD4]',
+    text: 'text-gray-600',
+    bg: 'bg-gray-100',
+    ring: 'ring-gray-200',
+    dot: 'bg-gray-400',
   },
   RUNNING: {
     label: 'Processing',
-    text: 'text-brand-700',
-    bg: 'bg-brand-500/10',
-    ring: 'ring-brand-500/20',
-    dot: 'bg-brand-500',
+    text: 'text-blue-700',
+    bg: 'bg-blue-50',
+    ring: 'ring-blue-200',
+    dot: 'bg-blue-500',
     pulse: true,
   },
   SUCCESS: {

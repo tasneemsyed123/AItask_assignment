@@ -31,9 +31,16 @@ def mark_running(task_id: str) -> None:
     tasks_collection.update_one(
         {"_id": ObjectId(task_id)},
         {
-            "$set": {"status": "RUNNING", "startedAt": now(), "updatedAt": now()},
+            "$set": {"status": "RUNNING", "progress": 0, "startedAt": now(), "updatedAt": now()},
             "$push": {"logs": {"level": "info", "message": "Worker picked up task", "timestamp": now()}},
         },
+    )
+
+
+def update_progress(task_id: str, progress: int) -> None:
+    tasks_collection.update_one(
+        {"_id": ObjectId(task_id)},
+        {"$set": {"progress": progress, "updatedAt": now()}},
     )
 
 
@@ -41,7 +48,7 @@ def mark_success(task_id: str, result) -> None:
     tasks_collection.update_one(
         {"_id": ObjectId(task_id)},
         {
-            "$set": {"status": "SUCCESS", "result": result, "finishedAt": now(), "updatedAt": now()},
+            "$set": {"status": "SUCCESS", "result": result, "progress": 100, "finishedAt": now(), "updatedAt": now()},
             "$push": {"logs": {"level": "info", "message": "Task completed successfully", "timestamp": now()}},
         },
     )

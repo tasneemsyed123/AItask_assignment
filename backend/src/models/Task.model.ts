@@ -31,6 +31,7 @@ export interface TaskDocument extends Document {
   inputText: string;
   operationType: OperationType;
   status: TaskStatus;
+  progress: number;
   result: string | number | null;
   errorMessage: string | null;
   logs: TaskLogEntry[];
@@ -65,6 +66,7 @@ const taskSchema = new Schema<TaskDocument>(
       enum: ['PENDING', 'RUNNING', 'SUCCESS', 'FAILED'],
       default: 'PENDING',
     },
+    progress: { type: Number, default: 0, min: 0, max: 100 },
     result: { type: Schema.Types.Mixed, default: null },
     errorMessage: { type: String, default: null },
     logs: { type: [taskLogSchema], default: [] },

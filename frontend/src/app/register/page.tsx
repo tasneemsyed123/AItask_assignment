@@ -1,8 +1,3 @@
-/**
- * app/register/page.tsx
- * --------------------------------------------------------------------------
- * Registration screen, matching the login page's purple/glow design exactly.
- */
 'use client';
 
 import { useState } from 'react';
@@ -19,12 +14,12 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
-    showToast('info', 'Creating your account…');
     try {
       const { data } = await apiClient.post('/auth/register', { name, email, password });
       login(data.data.accessToken, data.data.user);
@@ -38,110 +33,137 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-[#FAFAFE]">
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-[#150F27] text-[#E4DFF7] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.07] pointer-events-none"
-             style={{ backgroundImage: 'radial-gradient(circle, #E4DFF7 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-brand-600 opacity-30 blur-[100px] animate-pulseGlow pointer-events-none" />
-        <div className="absolute -bottom-32 -left-16 w-80 h-80 rounded-full bg-brand-500 opacity-20 blur-[110px] pointer-events-none" />
-
-        <div className="relative flex items-center gap-2.5 font-semibold text-base tracking-tight">
-          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-xs font-bold shadow-glow">AI</div>
-          Task Platform
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#EEF3FC] via-[#F5F8FE] to-[#FAFBFF] px-4 py-8 sm:px-6 sm:py-12">
+      <div className="w-full max-w-[420px] md:max-w-[460px]">
+        <div className="text-center mb-6 md:mb-8">
+          <h1 className="text-3xl sm:text-4xl md:text-[42px] font-extrabold text-blue-600 tracking-tight leading-none">
+            AI TASK MANAGER
+          </h1>
+          <p className="text-sm md:text-base text-[#6B7280] mt-2.5">
+            Task Management | by Tasneem Syed
+          </p>
         </div>
 
-        <div className="relative">
-          <h2 className="text-4xl font-semibold leading-[1.1] tracking-tight mb-4 max-w-md">
-            Four operations,<br />one queue, full visibility.
-          </h2>
-          <p className="text-[#A79BC9] text-sm max-w-sm mb-10 leading-relaxed">
-            Create an account and start running text-processing tasks through
-            a real async pipeline - not a spinner that hides what's happening.
-          </p>
+        <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgba(30,64,175,0.08)] border border-[#E7ECF6] overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700" />
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm overflow-hidden max-w-sm">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
-              <span className="text-[11px] font-mono tracking-wide text-[#A79BC9]">OPERATIONS</span>
-              <span className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                4 available
-              </span>
-            </div>
-            <div className="divide-y divide-white/[0.06]">
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-xs font-mono text-[#C9C2E8]">UPPERCASE</span>
-                <span className="text-[11px] font-mono text-[#786F98]">abc → ABC</span>
+          <div className="px-6 pt-7 pb-7 sm:px-8 sm:pt-8 sm:pb-8 md:px-10 md:pt-10 md:pb-10">
+            <h2 className="text-lg md:text-xl font-semibold text-[#111827] tracking-tight leading-tight mb-1">Create your account</h2>
+            <p className="text-xs md:text-sm text-[#6B7280] mb-6 md:mb-7">Start running AI processing tasks</p>
+
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+              <div>
+                <label className="block text-xs md:text-sm font-medium text-[#374151] mb-1.5">Name</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/>
+                      <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" strokeLinecap="round"/>
+                    </svg>
+                  </span>
+                  <input
+                    required
+                    autoComplete="name"
+                    placeholder="Jane Doe"
+                    className="w-full pl-10 pr-3.5 py-2.5 md:py-3 rounded-lg border border-[#E5E9F2] bg-[#FAFBFF] text-sm md:text-[15px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-blue-500/12 focus:border-blue-500 focus:bg-white transition-all duration-200"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-xs font-mono text-[#C9C2E8]">LOWERCASE</span>
-                <span className="text-[11px] font-mono text-[#786F98]">ABC → abc</span>
+
+              <div>
+                <label className="block text-xs md:text-sm font-medium text-[#374151] mb-1.5">Email address</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M4 6h16v12H4z"/>
+                      <path d="M4 7l8 6 8-6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="name@company.com"
+                    className="w-full pl-10 pr-3.5 py-2.5 md:py-3 rounded-lg border border-[#E5E9F2] bg-[#FAFBFF] text-sm md:text-[15px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-blue-500/12 focus:border-blue-500 focus:bg-white transition-all duration-200"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-xs font-mono text-[#C9C2E8]">REVERSE</span>
-                <span className="text-[11px] font-mono text-[#786F98]">abc → cba</span>
+
+              <div>
+                <label className="block text-xs md:text-sm font-medium text-[#374151] mb-1.5">Password</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <rect x="4" y="10" width="16" height="10" rx="2"/>
+                      <path d="M8 10V7a4 4 0 1 1 8 0v3" strokeLinecap="round"/>
+                    </svg>
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    placeholder="At least 8 characters"
+                    className="w-full pl-10 pr-10 py-2.5 md:py-3 rounded-lg border border-[#E5E9F2] bg-[#FAFBFF] text-sm md:text-[15px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-blue-500/12 focus:border-blue-500 focus:bg-white transition-all duration-200"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.4 5.5A9.4 9.4 0 0 1 12 5c5 0 9 4 10 7-.5 1.4-1.4 2.9-2.6 4.1M6.6 6.6C4.6 8 3.2 9.9 2 12c1.4 3.5 5.5 7 10 7 1.3 0 2.5-.2 3.7-.6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    ) : (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-xs font-mono text-[#C9C2E8]">WORD_COUNT</span>
-                <span className="text-[11px] font-mono text-[#786F98]">"a b c" → 3</span>
-              </div>
-            </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg py-2.5 md:py-3.5 text-sm md:text-[15px] font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 mt-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.25"/>
+                      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                    </svg>
+                    Creating account…
+                  </>
+                ) : (
+                  <>
+                    Create account
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <p className="text-xs md:text-sm text-[#6B7280] text-center mt-6">
+              Already have an account?{' '}
+              <Link href="/login" className="text-blue-600 font-medium hover:text-blue-700 transition-colors">
+                Sign in
+              </Link>
+            </p>
           </div>
-        </div>
-
-        <p className="relative text-xs text-[#786F98]">© 2026 AI Task Platform</p>
-      </div>
-
-      <div className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <h1 className="text-[26px] font-semibold text-[#1A1325] tracking-tight mb-1.5">Create your account</h1>
-          <p className="text-sm text-[#6B7280] mb-8">Start running AI processing tasks</p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#1A1325] mb-1.5">Name</label>
-              <input
-                required
-                className="w-full border border-[#E6E1F5] rounded-lg px-3.5 py-2.5 text-sm text-[#1A1325] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-brand-500/15 focus:border-brand-500 transition-all duration-200"
-                placeholder="Jane Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#1A1325] mb-1.5">Email</label>
-              <input
-                type="email"
-                required
-                className="w-full border border-[#E6E1F5] rounded-lg px-3.5 py-2.5 text-sm text-[#1A1325] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-brand-500/15 focus:border-brand-500 transition-all duration-200"
-                placeholder="name@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#1A1325] mb-1.5">Password</label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                className="w-full border border-[#E6E1F5] rounded-lg px-3.5 py-2.5 text-sm text-[#1A1325] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-4 focus:ring-brand-500/15 focus:border-brand-500 transition-all duration-200"
-                placeholder="At least 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-lg py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-glow active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
-            >
-              {isSubmitting ? 'Creating account…' : 'Create account'}
-            </button>
-          </form>
-
-          <p className="text-sm text-[#6B7280] text-center mt-6">
-            Already have an account? <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700 transition-colors">Sign in</Link>
-          </p>
         </div>
       </div>
     </div>

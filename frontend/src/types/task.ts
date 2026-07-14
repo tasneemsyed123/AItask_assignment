@@ -4,30 +4,35 @@
  * NOTE: TaskStatus is unchanged from your existing enum so this doesn't
  * break your backend contract. "Queued" / "Processing" labels in the UI
  * map onto PENDING / RUNNING — see StatusBadge + TaskProgress.
+ *
+ * OperationType now matches the backend's actual enum (tasks.schema.ts /
+ * worker/app/operations) — it's 'REVERSE', not 'REVERSE_STRING'.
  */
 
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
 
-export type OperationType = 'UPPERCASE' | 'LOWERCASE' | 'REVERSE_STRING' | 'WORD_COUNT';
+export type OperationType = 'UPPERCASE' | 'LOWERCASE' | 'REVERSE' | 'WORD_COUNT';
 
 export const OPERATION_LABELS: Record<OperationType, string> = {
   UPPERCASE: 'Uppercase',
   LOWERCASE: 'Lowercase',
-  REVERSE_STRING: 'Reverse string',
+  REVERSE: 'Reverse string',
   WORD_COUNT: 'Word count',
 };
 
 export const OPERATION_DESCRIPTIONS: Record<OperationType, string> = {
   UPPERCASE: 'Convert all characters to uppercase',
   LOWERCASE: 'Convert all characters to lowercase',
-  REVERSE_STRING: 'Reverse the input string',
+  REVERSE: 'Reverse the input string',
   WORD_COUNT: 'Return the total number of words',
 };
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'success';
 
 export interface TaskLogEntry {
-  id: string;
+  // Log entries are embedded subdocuments on the backend ({ _id: false }),
+  // so they never carry an id — index-based keys are used when rendering.
+  id?: string;
   timestamp: string; // ISO 8601
   level: LogLevel;
   message: string;
@@ -39,6 +44,8 @@ export interface Task {
   operationType: OperationType;
   inputText: string;
   status: TaskStatus;
+  /** 0-100, updated by the worker as it processes chunks of inputText. */
+  progress: number;
   createdAt: string;
   startedAt?: string;
   completedAt?: string;

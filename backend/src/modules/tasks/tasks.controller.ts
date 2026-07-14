@@ -14,7 +14,11 @@ const tasksService = new TasksService(new TasksRepository());
 
 export const tasksController = {
   async create(req: AuthenticatedRequest, res: Response) {
-    const task = await tasksService.createTask(req.user!.userId, req.body);
+    const created = await tasksService.createTask(req.user!.userId, req.body);
+    // Auto-run on creation: skip the old "create, then click Run" two-step
+    // flow. The separate POST /:id/run route stays in place for re-running
+    // a task from FAILED.
+    const task = await tasksService.runTask(req.user!.userId, created._id.toString());
     res.status(201).json({ success: true, data: { task } });
   },
 
@@ -32,5 +36,10 @@ export const tasksController = {
     const query = listTasksQuerySchema.parse(req.query);
     const { tasks, total } = await tasksService.listTasks(req.user!.userId, query);
     res.status(200).json({ success: true, data: { tasks, total, page: query.page, limit: query.limit } });
+  },
+
+  async remove(req: AuthenticatedRequest, res: Response) {
+    await tasksService.deleteTask(req.user!.userId, req.params.id);
+    res.status(204).send();
   },
 };

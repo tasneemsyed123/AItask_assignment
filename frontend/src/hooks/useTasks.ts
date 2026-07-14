@@ -49,3 +49,17 @@ export function useRunTask() {
     },
   });
 }
+
+export function useDeleteTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      await apiClient.delete(`/tasks/${taskId}`);
+      return taskId;
+    },
+    onSuccess: (taskId) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.all });
+      queryClient.removeQueries({ queryKey: taskKeys.detail(taskId) });
+    },
+  });
+}

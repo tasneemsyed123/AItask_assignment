@@ -1,8 +1,7 @@
 /**
  * components/Toast.tsx
  * --------------------------------------------------------------------------
- * Lightweight toast/notification system - dependency-free. Every important
- * action shows a visible toast, matching the app's dark purple design.
+ * Lightweight toast/notification system — clean white card, blue accent.
  */
 'use client';
 
@@ -14,9 +13,9 @@ interface ToastItem { id: number; type: ToastType; message: string; }
 const ToastContext = createContext<{ show: (type: ToastType, message: string) => void } | null>(null);
 
 const DOT: Record<ToastType, string> = {
-  success: 'bg-emerald-400',
-  error: 'bg-red-400',
-  info: 'bg-brand-400',
+  success: 'bg-emerald-500',
+  error: 'bg-red-500',
+  info: 'bg-blue-500',
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -35,7 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="animate-slideIn flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-glow border border-white/10 bg-[#150F27] text-sm font-medium text-[#E4DFF7]"
+            className="animate-slideIn flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg border border-gray-200 bg-white text-sm font-medium text-gray-800"
           >
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT[t.type]}`} />
             {t.message}

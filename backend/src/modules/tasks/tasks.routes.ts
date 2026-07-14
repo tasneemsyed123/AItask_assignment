@@ -18,3 +18,4 @@ tasksRouter.post('/', validateBody(createTaskSchema), asyncHandler(tasksControll
 tasksRouter.post('/:id/run', asyncHandler(tasksController.run));
 tasksRouter.get('/:id', asyncHandler(tasksController.getOne));
 tasksRouter.get('/', asyncHandler(tasksController.list));
+tasksRouter.delete('/:id', asyncHandler(tasksController.remove));
