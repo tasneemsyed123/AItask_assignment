@@ -1,8 +1,8 @@
-# AI Task Processing Platform — Phase 1
+# AI Task Processing Platform
 
 A production-style AI Task Processing Platform: authenticated users create text-processing tasks, run them asynchronously via a Redis queue + Python worker, and monitor status/logs/results via polling.
 
-**Phase 1 scope**: application layer only (MERN + Python worker). No Docker images for the app, no Kubernetes, no Argo CD, no CI/CD — those are Phase 2.
+**Scope**: application layer (MERN + Python worker), each service containerized with its own multi-stage Dockerfile running as a non-root user, plus a Docker Compose stack for local development. Kubernetes, Argo CD, and CI/CD are still ahead (Phase 3).
 
 ## Stack
 
@@ -28,15 +28,53 @@ See `phase1-design.md` (shared earlier) for the full design doc: DB schema, inde
 
 ## Prerequisites
 
-- Node.js 18+
-- Python 3.10+
-- Docker (for MongoDB + Redis via `docker-compose.yml` — infra only, not the app)
+- Docker (for either path below)
+- Node.js 18+ and Python 3.10+ (only needed for Option B, running services directly on the host)
 
-## 1. Start MongoDB + Redis
+There are two ways to run this locally - pick one.
+
+## Option A: everything in Docker (fastest)
+
+Every service (Mongo, Redis, backend, worker, frontend) runs as its own container from a multi-stage Dockerfile, as a non-root user, wired together by `docker-compose.yml`. This builds and runs the same production-style images you'd deploy - not a hot-reload dev setup, so re-run the build command after a code change to pick it up.
+
+```bash
+cp .env.example .env            # root-level: Mongo/Redis credentials, see comment in the file
+cd backend  && cp .env.example .env && cd ..
+cd worker   && cp .env.example .env && cd ..
+```
+
+Generate a strong `JWT_SECRET` (the backend refuses to boot with one shorter than 32 characters, or missing entirely) and put it in `backend/.env`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+Then build and start everything:
+
+```bash
+docker compose up -d --build
+```
+
+This starts Mongo/Redis on `127.0.0.1:27017`/`127.0.0.1:6379`, the backend on `127.0.0.1:4000`, and the frontend on `127.0.0.1:3000` - all bound to loopback only, not your whole LAN. `docker compose ps` should show all five containers `healthy`. Backend/worker logs land in the project's shared `logs/` folder on the host exactly as in Option B (mounted, not container-internal) - see [Unified logging](#unified-logging---debug-everything-from-one-place) below.
+
+If you already had the old Mongo/Redis-only containers running from before this existed, Mongo won't retroactively pick up auth on an existing data volume - wipe and recreate:
+
+```bash
+docker compose down -v   # -v also removes the mongo_data/redis_data volumes
+docker compose up -d --build
+```
+
+To pick up a code change: `docker compose up -d --build <service>` (e.g. `backend`) rebuilds and restarts just that one container.
+
+## Option B: run services directly on the host (hot-reload dev)
+
+Faster edit-save-see-it loop, since nothing needs a container rebuild. Mongo/Redis still run in Docker either way.
+
+### 1. Start MongoDB + Redis
 
 ```bash
 cp .env.example .env      # generate real passwords, see comment in the file
-docker compose up -d
+docker compose up -d mongo redis
 ```
 
 This starts Mongo on `127.0.0.1:27017` and Redis on `127.0.0.1:6379` - both require auth (credentials come from the root `.env` above) and only bind to loopback, not your whole LAN. `MONGO_APP_USER`/`MONGO_APP_PASSWORD` in that file must match what you put in `backend/.env` and `worker/.env`'s `MONGO_URI`/`REDIS_URL` below - they're the same credentials, just consumed by different services.
@@ -45,10 +83,10 @@ If you already had these containers running from before auth was added, Mongo wo
 
 ```bash
 docker compose down -v   # -v also removes the mongo_data/redis_data volumes
-docker compose up -d
+docker compose up -d mongo redis
 ```
 
-## 2. Backend setup
+### 2. Backend setup
 
 ```bash
 cd backend
@@ -68,7 +106,7 @@ Paste the output into `JWT_SECRET=` in `backend/.env`. Never commit this value -
 npm run dev                # starts on http://localhost:4000
 ```
 
-## 3. Python worker setup
+### 3. Python worker setup
 
 ```bash
 cd worker
@@ -81,7 +119,7 @@ python -m app.main
 
 You should see `Worker started, listening on queue 'task_queue'` in the logs. To simulate horizontal scaling, just run this command again in another terminal — multiple workers can safely consume the same queue (BRPOP is atomic, no double-processing).
 
-## 4. Frontend setup
+### 4. Frontend setup
 
 ```bash
 cd frontend
@@ -90,7 +128,7 @@ npm install
 npm run dev                 # starts on http://localhost:3000
 ```
 
-## 5. (Optional) Enable password reset emails via Gmail
+## (Optional) Enable password reset emails via Gmail
 
 Forgot/reset password works without this - `forgotPassword` just logs a
 warning and returns instead of sending an email. To make it actually send:
@@ -103,9 +141,9 @@ warning and returns instead of sending an email. To make it actually send:
    GMAIL_APP_PASSWORD=the16charapppassword
    FRONTEND_URL=http://localhost:3000
    ```
-4. Restart the backend. Now "Forgot password?" on the login page sends a real email with a reset link.
+4. Restart the backend - `npm run dev` picks it up automatically (Option B), or `docker compose up -d backend` (Option A, no rebuild needed since env vars are read at container start, not baked in at build time). Now "Forgot password?" on the login page sends a real email with a reset link.
 
-## 6. Unified logging - debug everything from one place
+## Unified logging - debug everything from one place
 
 The backend and worker both write structured JSON logs to a shared `logs/`
 folder at the project root (`logs/backend.log`, `logs/worker.log`), in
@@ -124,7 +162,7 @@ way to see exactly where a task gets stuck (e.g. backend logs "Task
 enqueued" but worker never logs "Processing task..." = a Redis/Mongo
 connection mismatch between the two services).
 
-## 7. Automated pipeline trace
+## Automated pipeline trace
 
 `debug-check.js` at the project root is a one-shot diagnostic script - not a
 test suite (no Jest, nothing asserts/fails a build) - that walks the entire
@@ -143,7 +181,7 @@ for the task to ever reach `SUCCESS` rather than hanging in `PENDING`/
 `RUNNING`. Useful any time something in the pipeline seems stuck, and as a
 quick smoke test after touching auth, Mongo/Redis config, or the queue.
 
-## 8. Try it out
+## Try it out
 
 1. Open `http://localhost:3000` → redirected to `/login` → click "Create one" to register.
 2. On the dashboard, click **+ New task**, fill in a title, some input text, and pick an operation.
@@ -182,11 +220,12 @@ All endpoints are under `/api/v1`. Task endpoints require `Authorization: Bearer
 - **Error handling**: a single error middleware is the only place that builds an HTTP error response; unexpected errors always return a generic 500 with no stack trace or internal detail to the client, in every environment (not just production).
 - **Secrets**: `.env` is gitignored in every service (`backend/`, `worker/`, `frontend/`); `.env.example` files with placeholder values are checked in for onboarding. No secrets are hardcoded in source.
 - **Logging**: structured (Winston) logs never include request bodies, passwords, tokens, or reset tokens - only IDs, emails, and error messages/stack traces for unexpected (non-`AppError`) failures.
-- **MongoDB / Redis**: both now require auth and are bound to `127.0.0.1` only in `docker-compose.yml`, not every interface on the host - previously they had no password and were reachable from the whole LAN (the exact pattern behind most "database left open on the internet" breaches). Mongo uses a dedicated `readWrite`-scoped app user (via `mongo-init/create-app-user.sh`), never the root/admin account, for the connection the backend/worker actually use. A real production deployment should go further than the loopback bind used here for local dev: no published ports at all, reachable only from the backend/worker over a private network/VPC, plus TLS (`?tls=true` / `rediss://`) once traffic crosses any network boundary - both out of scope for this Phase 1 local-dev compose file but required before a real deployment.
+- **MongoDB / Redis**: both require auth and are bound to `127.0.0.1` only in `docker-compose.yml`, not every interface on the host - previously they had no password and were reachable from the whole LAN (the exact pattern behind most "database left open on the internet" breaches). Mongo uses a dedicated `readWrite`-scoped app user (via `mongo-init/create-app-user.sh`), never the root/admin account, for the connection the backend/worker actually use. A real production deployment should go further than the loopback bind used here for local dev: no published ports at all, reachable only from the backend/worker over a private network/VPC, plus TLS (`?tls=true` / `rediss://`) once traffic crosses any network boundary.
+- **Containers run as non-root**: every service's Dockerfile (`backend/`, `frontend/`, `worker/`) creates and switches to an unprivileged user in its final stage - `node` (Node's own built-in Alpine user) for the backend, a dedicated `nextjs` user for the frontend, a dedicated `appuser` for the worker. Multi-stage builds also mean none of the three final images contain devDependencies, TypeScript/build tooling, or (for the worker) pip's build cache.
 
 ## Notes / assumptions
 
-- Access-token-only auth (no refresh tokens) per Phase 1 scope decision.
+- Access-token-only auth (no refresh tokens) - deliberate scope decision, not an oversight.
 - Redis queue uses a plain list (`LPUSH`/`BRPOP`), not Celery — simplest option that satisfies the async-processing requirement.
-- Redis failure handling: since plain lists have no ack/retry mechanism, a background "stale task reaper" (`backend/src/queue/staleTaskReaper.ts`) marks any task stuck in `RUNNING` past a timeout as `FAILED`, so the UI never hangs indefinitely on a crashed worker.
-- Docker Compose here is for local **infrastructure** (Mongo/Redis) only — the application itself is deliberately not containerized in Phase 1.
+- Redis failure handling: since plain lists have no ack/retry mechanism, a background "stale task reaper" (`backend/src/queue/staleTaskReaper.ts`) marks a task `FAILED` if it's either stuck `RUNNING` past a timeout (worker crashed mid-task) or stuck `PENDING` past a shorter timeout (saved as queued but never actually reached Redis, e.g. a momentary Redis blip) - so the UI never hangs indefinitely on either failure mode, and both become retriable through the same UI action.
+- `docker-compose.yml` runs the full stack (Mongo, Redis, backend, worker, frontend) for local development, each app service built from its own multi-stage Dockerfile. Kubernetes, Argo CD, and CI/CD are the next phase.

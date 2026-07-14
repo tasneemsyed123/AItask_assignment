@@ -1,20 +1,20 @@
 # docker-compose.yml
 # ------------------------------------------------------------------------
-# INFRA ONLY for local development - runs MongoDB + Redis so you don't need
-# to install them on your machine. The application itself (backend, worker,
-# frontend) is intentionally NOT containerized here - that is Phase 2 scope
-# (Docker images for the app + Kubernetes + Argo CD + CI/CD).
+# Full local-dev stack: MongoDB + Redis + the app itself (backend, worker,
+# frontend), each built from its own multi-stage Dockerfile and run as a
+# non-root user. This runs the same production-style images you'd deploy
+# with - not a hot-reload dev setup - so `docker compose up --build` after
+# a code change to pick it up.
 #
-# Both services require auth (credentials come from a root-level `.env` -
-# see .env.example) and only bind to 127.0.0.1, not every interface on the
-# host - an unauthenticated Mongo/Redis reachable from the LAN/internet is
-# one of the most common real-world breach patterns, so neither is safe to
-# leave open even in local dev. A real production deployment should go
-# further and not publish these ports at all - reachable only from the
-# backend/worker over a private network - see README Security section.
+# Every service binds published ports to 127.0.0.1 only, not every
+# interface on the host - unauthenticated or unnecessarily-LAN-exposed
+# services are one of the most common real-world breach patterns, so
+# nothing here is reachable from the LAN/internet even in local dev. A real
+# production deployment should go further still and not publish Mongo/Redis
+# ports at all - reachable only from the backend/worker over a private
+# network - see README Security section.
 #
-# Usage: docker compose up -d
-# Then run backend/worker/frontend locally with `npm run dev` / `python -m app.main`.
+# Usage: docker compose up -d --build
 services:
   mongo:
     image: mongo:7
@@ -30,6 +30,13 @@ services:
     volumes:
       - mongo_data:/data/db
       - ./mongo-init/create-app-user.sh:/docker-entrypoint-initdb.d/create-app-user.sh:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -39,6 +46,84 @@ services:
       - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai_task_platform_backend
+    # Pulls JWT_SECRET, JWT_EXPIRES_IN, GMAIL_USER/APP_PASSWORD, etc.
+    # straight from the existing backend/.env, so those secrets live in
+    # exactly one place instead of being duplicated into this file too.
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override the host-oriented values from backend/.env (which target
+      # `localhost` for running the backend directly on the host) with
+      # container-network-aware ones - inside this compose network, Mongo
+      # and Redis are reachable by service name, not localhost.
+      NODE_ENV: production
+      MONGO_URI: mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@mongo:27017/ai_task_platform?authSource=ai_task_platform
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      CORS_ORIGIN: http://localhost:3000
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      # Both loggers write to /logs inside the container (see the Dockerfile
+      # comments) - mounting the project's shared logs/ folder here means
+      # scripts/merge-logs.js keeps working the same way whether the
+      # backend is containerized or run directly on the host.
+      - ./logs:/logs
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: ai_task_platform_worker
+    env_file:
+      - ./worker/.env
+    environment:
+      MONGO_URI: mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@mongo:27017/ai_task_platform?authSource=ai_task_platform
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+    volumes:
+      - ./logs:/logs
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Baked into the client bundle at build time - must be the
+        # HOST-mapped backend URL, since the browser (not this container)
+        # is what calls it, and the browser can't resolve Docker service
+        # names like `backend`.
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:4000/api/v1
+    container_name: ai_task_platform_frontend
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   mongo_data:
