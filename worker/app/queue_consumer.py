@@ -26,6 +26,8 @@ import os
 import random
 import threading
 import time
+from pathlib import Path
+
 import redis
 from dotenv import load_dotenv
 
@@ -39,6 +41,21 @@ logger = get_logger("queue_consumer")
 
 QUEUE_KEY = os.getenv("TASK_QUEUE_KEY", "task_queue")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+# Kubernetes has no HTTP server to probe here (this is a queue consumer, not
+# a web service), so liveness/readiness use the heartbeat-file pattern
+# instead: an exec probe checks this file's mtime is recent (see
+# worker/k8s-probe.py). BRPOP normally blocks indefinitely waiting for a
+# task - HEARTBEAT_INTERVAL_SECONDS also doubles as its timeout, so the loop
+# wakes up and touches the file even when the queue is empty. Without that,
+# a healthy-but-idle worker (no tasks queued) would look indistinguishable
+# from a hung one and get killed by its own liveness probe.
+HEARTBEAT_FILE = Path(os.getenv("HEARTBEAT_FILE", "/tmp/worker-heartbeat"))
+HEARTBEAT_INTERVAL_SECONDS = 10
+
+
+def touch_heartbeat() -> None:
+    HEARTBEAT_FILE.touch()
 
 # Every task takes ~this long and reports progress in fixed increments over
 # that time, regardless of input length - purely so progress bars fill
@@ -91,10 +108,19 @@ def process_task(task_id: str) -> None:
 def run_forever() -> None:
     client = redis.from_url(REDIS_URL, decode_responses=True)
     logger.info(f"Worker started, listening on queue '{QUEUE_KEY}'")
+    touch_heartbeat()
 
     while True:
-        # BRPOP blocks until a message is available - 0 means "wait forever".
-        _, raw_payload = client.brpop(QUEUE_KEY)
+        # Timeout (rather than 0/"wait forever") so the loop wakes up and
+        # touches the heartbeat file periodically even when the queue is
+        # empty - see the HEARTBEAT_FILE comment above.
+        result = client.brpop(QUEUE_KEY, timeout=HEARTBEAT_INTERVAL_SECONDS)
+        touch_heartbeat()
+
+        if result is None:
+            continue  # timed out with no task - just a heartbeat tick
+
+        _, raw_payload = result
         try:
             payload = json.loads(raw_payload)
             # Hand off to a thread and immediately loop back to BRPOP, so

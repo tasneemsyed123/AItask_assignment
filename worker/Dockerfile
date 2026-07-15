@@ -22,6 +22,7 @@ RUN groupadd --system appuser && useradd --system --gid appuser --no-create-home
 
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 COPY --chown=appuser:appuser app ./app
+COPY --chown=appuser:appuser k8s_probe.py .
 
 # app/logger.py resolves its log directory as two parents up from itself
 # (app/logger.py -> app/ -> /), matching the monorepo-relative path used in
@@ -37,6 +38,11 @@ ENV PATH=/home/appuser/.local/bin:$PATH \
 
 USER appuser
 
-# No HTTP endpoint to probe (this is a queue consumer, not a server) - rely
-# on `docker compose`'s depends_on + restart policy instead of a HEALTHCHECK.
+# No HTTP endpoint to probe (this is a queue consumer, not a server) - both
+# this HEALTHCHECK and Kubernetes' liveness/readiness probes instead run
+# k8s_probe.py, which checks that queue_consumer.py's heartbeat file was
+# touched recently (see its docstring).
+HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
+  CMD python k8s_probe.py
+
 CMD ["python", "-m", "app.main"]

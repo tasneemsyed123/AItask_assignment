@@ -8,7 +8,9 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import mongoose from 'mongoose';
 import { env } from './config/env';
+import { redisClient } from './config/redis';
 import { apiRateLimiter } from './middlewares/rateLimit.middleware';
 import { errorMiddleware } from './middlewares/error.middleware';
 import { authRouter } from './modules/auth/auth.routes';
@@ -49,6 +51,39 @@ export function createApp(): Application {
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ success: true, data: { status: 'ok' } });
+  });
+
+  // Kubernetes-style split health checks, registered ahead of the rate
+  // limiter since a probe fires every few seconds per pod and shouldn't
+  // compete with real traffic for that budget.
+  //
+  // Liveness: only answers "is the process itself still responding" - no
+  // dependency checks. If this checked Mongo/Redis too, a transient outage
+  // in either would make Kubernetes kill and restart an otherwise-healthy
+  // backend pod, which doesn't fix anything and just adds churn.
+  app.get('/api/health/live', (_req, res) => {
+    res.status(200).json({ success: true, data: { status: 'alive' } });
+  });
+
+  // Readiness: "can this pod actually serve a request right now" - checks
+  // both dependencies the backend can't function without. Kubernetes stops
+  // routing traffic to a pod that fails this (without restarting it), which
+  // is exactly right for "Mongo/Redis is still connecting at startup" or a
+  // brief reconnect blip, as opposed to liveness's "kill and restart."
+  app.get('/api/health/ready', (_req, res) => {
+    const mongoReady = mongoose.connection.readyState === 1;
+    const redisReady = redisClient.isReady;
+
+    if (mongoReady && redisReady) {
+      res.status(200).json({ success: true, data: { status: 'ready', mongo: true, redis: true } });
+      return;
+    }
+
+    res.status(503).json({
+      success: false,
+      error: { code: 'NOT_READY', message: 'One or more dependencies are not ready' },
+      data: { mongo: mongoReady, redis: redisReady },
+    });
   });
 
   // Baseline abuse guard for the whole API surface; individual auth routes
