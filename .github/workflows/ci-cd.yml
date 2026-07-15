@@ -1,0 +1,142 @@
+name: CI/CD
+
+# Runs on every push to main or docker - lints all three services, builds
+# and pushes their images to Docker Hub, then commits the new image tags
+# to the separate infra repo, which ArgoCD watches and auto-deploys from.
+# See ai-task-platform-infra/README.md for the manual version of this same
+# flow and why the two repos are split in the first place.
+on:
+  push:
+    branches: [main, docker]
+
+env:
+  DOCKERHUB_NAMESPACE: tasneemsyed
+  INFRA_REPO: tasneemsyed123/AItask_assignment-infra
+
+jobs:
+  lint-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm run lint
+        working-directory: backend
+
+  lint-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+
+  lint-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ruff
+      - run: ruff check .
+        working-directory: worker
+
+  build-and-push:
+    needs: [lint-backend, lint-frontend, lint-worker]
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Short commit SHA as the image tag - never :latest. See the infra
+      # repo README's "prefer a versioned tag" note: imagePullPolicy:
+      # IfNotPresent means a node that already cached an image under a
+      # given tag won't re-pull just because :latest's content changed
+      # remotely, so a mutable tag silently breaks "push new code, get
+      # new code" without this.
+      - id: vars
+        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_NAMESPACE }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ env.DOCKERHUB_NAMESPACE }}/ai-task-platform-backend:${{ steps.vars.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push worker
+        uses: docker/build-push-action@v6
+        with:
+          context: worker
+          push: true
+          tags: ${{ env.DOCKERHUB_NAMESPACE }}/ai-task-platform-worker:${{ steps.vars.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # NEXT_PUBLIC_API_BASE_URL is a build-time constant baked into the
+      # client bundle, not a runtime env var - see frontend/Dockerfile's
+      # comments. Passed here as a YAML string through Actions' own
+      # input mechanism, not a shell argument, which is exactly what
+      # avoids the Git-Bash-on-Windows path-mangling bug documented in
+      # the infra repo README (/api/v1 silently became a Windows path
+      # when built locally through Git Bash - this workflow runs on a
+      # Linux runner, so that whole bug class doesn't apply here).
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=/api/v1
+          tags: ${{ env.DOCKERHUB_NAMESPACE }}/ai-task-platform-frontend:${{ steps.vars.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  update-infra-repo:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.INFRA_REPO }}
+          token: ${{ secrets.INFRA_REPO_PAT }}
+
+      - name: Bump image tags
+        env:
+          TAG: ${{ needs.build-and-push.outputs.tag }}
+        run: |
+          set -e
+          sed -i "s#image: .*/ai-task-platform-backend:.*#image: ${DOCKERHUB_NAMESPACE}/ai-task-platform-backend:${TAG}#" 06-backend.yaml
+          sed -i "s#image: .*/ai-task-platform-worker:.*#image: ${DOCKERHUB_NAMESPACE}/ai-task-platform-worker:${TAG}#" 07-worker.yaml
+          sed -i "s#image: .*/ai-task-platform-frontend:.*#image: ${DOCKERHUB_NAMESPACE}/ai-task-platform-frontend:${TAG}#" 08-frontend.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add 06-backend.yaml 07-worker.yaml 08-frontend.yaml
+          git diff --cached --quiet && echo "No image changes" && exit 0
+          git commit -m "Deploy $(echo ${{ github.sha }} | cut -c1-7) from ${{ github.repository }}"
+          git push
