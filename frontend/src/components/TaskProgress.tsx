@@ -45,7 +45,8 @@ export function TaskProgress({
   ];
 
   return (
-    <div className="flex items-center w-full">
+    <div className="overflow-x-auto">
+    <div className="flex items-center w-full min-w-[280px]">
       {steps.map((step, i) => {
         const isDone = i < current || (i === current && status === 'SUCCESS');
         const isActive = i === current && status !== 'SUCCESS';
@@ -90,6 +91,7 @@ export function TaskProgress({
           </div>
         );
       })}
+    </div>
     </div>
   );
 }

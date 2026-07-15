@@ -105,8 +105,8 @@ export function TaskPipelineAnimation({ status, progress = 0 }: { status: TaskSt
   const failed = status === 'FAILED';
 
   return (
-    <div className="rounded-xl bg-white dark:bg-gray-900 ring-1 ring-gray-200 dark:ring-gray-700 px-4 py-4 animate-scaleIn">
-      <div className="flex items-center w-full">
+    <div className="rounded-xl bg-white dark:bg-gray-900 ring-1 ring-gray-200 dark:ring-gray-700 px-4 py-4 animate-scaleIn overflow-x-auto">
+      <div className="flex items-center w-full min-w-[560px]">
         {NODES.map((node, i) => {
           const state = states[i];
           const showConnected = (node.key === 'redis' || node.key === 'mongo') && (state === 'done' || state === 'active');

@@ -431,8 +431,8 @@ function TaskRow({
         }}
         className="px-5 py-3.5 hover:bg-white dark:hover:bg-gray-800 cursor-pointer transition-colors group focus:outline-none"
       >
-        <div className="flex sm:grid sm:grid-cols-[2fr_1fr_1fr_0.6fr] items-center text-sm mb-2 gap-2">
-          <span className="text-gray-900 dark:text-gray-100 font-medium flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[2fr_1fr_1fr_0.6fr] sm:items-center sm:gap-2 text-sm mb-2">
+          <span className="text-gray-900 dark:text-gray-100 font-medium flex items-center gap-2 min-w-0 flex-1 w-full sm:w-auto">
             {selectMode ? (
               <span
                 aria-hidden="true"
@@ -465,6 +465,7 @@ function TaskRow({
           <span className="hidden sm:inline text-gray-500 dark:text-gray-400 font-mono text-xs">
             {OPERATION_LABELS[task.operationType] ?? task.operationType}
           </span>
+          <div className="flex items-center justify-between sm:contents">
           <span><StatusBadge status={current.status} /></span>
           <span className="text-right shrink-0 flex items-center justify-end gap-1.5">
             {!selectMode && (
@@ -515,6 +516,7 @@ function TaskRow({
               </>
             )}
           </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex-1">
