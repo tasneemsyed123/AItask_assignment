@@ -537,8 +537,8 @@ function TaskRow({
       >
         <div className="overflow-hidden">
           <div className="px-5 pb-5 pt-1 bg-gray-100/60 dark:bg-gray-800/60 border-t border-gray-200 dark:border-gray-700 space-y-4">
-            <div className="pt-3 px-1 flex items-start justify-between gap-3">
-              <div className="flex-1">
+            <div className="pt-3 px-1 flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-3">
+              <div className="flex-1 min-w-0 order-2 sm:order-1">
                 {justCreated ? (
                   <TaskPipelineAnimation status={current.status} progress={current.progress} />
                 ) : (
@@ -548,7 +548,7 @@ function TaskRow({
               <Link
                 href={`/tasks/${task._id}`}
                 onClick={(e) => e.stopPropagation()}
-                className="shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
+                className="shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap order-1 sm:order-2"
               >
                 View full page →
               </Link>
